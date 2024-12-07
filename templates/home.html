@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>PS Scheduler</title>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-center">Welcome to PS Scheduler</h1>
+        <a href="{{ url_for('add_task') }}" class="btn btn-success">Add Task</a>
+        <a href="{{ url_for('dashboard') }}" class="btn btn-primary">Dashboard</a>
+        <a href="{{ url_for('export_tasks') }}" class="btn btn-info">Export Tasks</a>
+
+        <h2>Tasks:</h2>
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>Task Name</th>
+                    <th>Date</th>
+                    <th>Start Time</th>
+                    <th>Deadline</th>
+                    <th>Priority</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if tasks %}
+                    {% for task in tasks %}
+                        <tr>
+                            <td>{{ task.name }}</td>
+                            <td>{{ task.date }}</td>
+                            <td>{{ task.start_time }}</td>
+                            <td>{{ task.deadline }}</td>
+                            <td>{{ task.priority }}</td>
+                            <td>{{ task.status }}</td>
+                            <td>
+                                <a href="{{ url_for('edit_task', task_id=loop.index0) }}" class="btn btn-warning btn-sm">Edit</a>
+                                <form method="POST" action="{{ url_for('delete_task', task_id=loop.index0) }}" style="display:inline;">
+                                    <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center">No tasks found.</td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</body>
+</html>

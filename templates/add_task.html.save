@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Add Task</title>
+    <!-- Link to the CSS file -->
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <h1>Add a New Task</h1>
+    <form method="POST">
+        <div class="mb-3">
+    <label for="recurrence" class="form-label">Recurrence</label>
+    <select class="form-select" id="recurrence" name="recurrence">
+        <option value="none" selected>No Recurrence</option>
+        <option value="daily">Daily</option>
+        <option value="weekly">Weekly</option>
+        <option value="monthly">Monthly</option>
+    </select>
+</div>
+        <label for="name">Task Name:</label>
+        <input type="text" name="name" required><br>
+
+        <label for="date">Date (dd-mm-yyyy):</label>
+        <input type="text" name="date" required><br>
+
+        <label for="start_time">Start Time (HH:MM AM/PM):</label>
+        <input type="text" name="start_time" required><br>
+
+        <label for="deadline">Deadline (HH:MM AM/PM):</label>
+        <input type="text" name="deadline" required><br>
+
+        <label for="priority">Priority:</label>
+        <select name="priority">
+            <option value="low">Low</option>
+            <option value="medium">Medium</option>
+            <option value="high">High</option>
+        </select><br>
+
+        <label for="recurrence">Recurrence:</label>
+        <select name="recurrence">
+            <option value="no">No</option>
+            <option value="daily">Daily</option>
+            <option value="weekly">Weekly</option>
+        </select><br>
+
+        <button type="submit">Add Task</button>
+    </form>
+</body>
+</html>

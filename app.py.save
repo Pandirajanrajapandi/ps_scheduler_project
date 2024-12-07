@@ -1,0 +1,230 @@
+from flask import Flask, render_template, request, redirect, url_for, flash
+import json
+import pandas as pd
+from datetime import datetime,date
+
+app = Flask(__name__)
+app.secret_key = "your_secret_key"  # Needed for flash messages
+
+# File paths
+TASKS_FILE = "ps_scheduler.json"
+CSV_FILE = "tasks.csv"
+
+
+# Helper functions
+def save_task_to_file(task):
+    try:
+        with open(TASKS_FILE, "r") as file:
+            tasks = json.load(file)
+    except FileNotFoundError:
+        tasks = []
+
+    tasks.append(task)
+
+    with open(TASKS_FILE, "w") as file:
+        json.dump(tasks, file, indent=4)
+
+
+def export_tasks_to_csv(tasks, csv_file=CSV_FILE):
+    df = pd.DataFrame(tasks)
+    df.to_csv(csv_file, index=False)
+
+
+# Routes
+@app.route('/')
+def home():
+    try:
+        with open(TASKS_FILE, "r") as file:
+            tasks = json.load(file)
+    except FileNotFoundError:
+        tasks = []
+
+    today = date.today()
+    for task in tasks:
+        task_date_obj = datetime.strptime(task['date'], "%d-%m-%Y").date()
+        if task['status'] == "pending" and task_date_obj < today:
+            task['status'] = "overdue"
+
+    with open(TASKS_FILE, "w") as file:
+        json.dump(tasks, file, indent=4)
+
+    return render_template("home.html", tasks=tasks)
+
+@app.errorhandler(404)
+def page_not_found(e):
+    return render_template("404.html"), 404
+
+@app.errorhandler(500)
+def internal_server_error(e):
+    flash("An unexpected error occurred. Please try again later.", "error")
+    return redirect(url_for('home'))
+
+@app.route('/add_task', methods=['POST'])
+def add_task():
+    task_name = request.form['name']
+    task_date = request.form['date']
+    start_time = request.form['start_time']
+    deadline = request.form.get('deadline', None)
+
+    # Validate task name for special characters (allow only letters, numbers, underscores)
+    if not re.match(r"^[\w\s]+$", task_name):
+        flash("Task name can only contain letters, numbers, and underscores.", "error")
+        return redirect(url_for('add_task'))
+
+    # Validate date
+    try:
+        task_date_obj = datetime.strptime(task_date, "%d-%m-%Y").date()
+        if task_date_obj < datetime.today().date():
+            flash("You cannot choose a past date.", "error")
+            return redirect(url_for('add_task'))
+    except ValueError:
+        flash("Invalid date format. Please use DD-MM-YYYY.", "error")
+        return redirect(url_for('add_task'))
+
+    # Validate time logic
+    if start_time and deadline:
+        start_time_obj = datetime.strptime(start_time, "%I:%M %p").time()
+        deadline_obj = datetime.strptime(deadline, "%I:%M %p").time()
+        if start_time_obj >= deadline_obj:
+            flash("Start time must be earlier than the deadline.", "error")
+            return redirect(url_for('add_task'))
+
+    # Save the task
+    task = {
+        "name": task_name,
+        "date": task_date,
+        "start_time": start_time,
+        "deadline": deadline or "Not specified",
+        "priority": request.form['priority'],
+        "recurrence": request.form['recurrence'],
+        "status": "pending"
+    }
+    save_task_to_file(task)
+    flash("Task added successfully!", "success")
+    return redirect(url_for('home'))
+
+@app.route('/edit_task/<int:task_id>', methods=['GET', 'POST'])
+def edit_task(task_id):
+    try:
+        with open(TASKS_FILE, "r") as file:
+            tasks = json.load(file)
+    except FileNotFoundError:
+        flash("No tasks found.", "error")
+        return redirect(url_for('home'))
+
+    if task_id >= len(tasks):
+        flash("Task not found.", "error")
+        return redirect(url_for('home'))
+
+    task = tasks[task_id]
+
+    if request.method == 'POST':
+        task_date_obj = datetime.strptime(task['date'], "%d-%m-%Y").date()
+        today = date.today()
+
+        # Restrict modifications for future tasks
+        if task_date_obj > today:
+            flash("You cannot modify future tasks.", "error")
+            return redirect(url_for('home'))
+
+        # Update current day task
+        if task_date_obj == today:
+            task['status'] = request.form['status']
+        else:
+            # Restrict completed modifications for past overdue tasks
+            if task['status'] == "overdue":
+                flash("You cannot modify overdue tasks.", "error")
+                return redirect(url_for('home'))
+
+        task['name'] = request.form['name']
+        task['priority'] = request.form['priority']
+        tasks[task_id] = task
+
+        with open(TASKS_FILE, "w") as file:
+            json.dump(tasks, file, indent=4)
+
+        flash("Task updated successfully!", "success")
+        return redirect(url_for('home'))
+
+    return render_template("edit_task.html", task=task, task_id=task_id)
+
+@app.route('/delete_task/<int:task_id>', methods=['POST'])
+def delete_task(task_id):
+    try:
+        with open(TASKS_FILE, 'r') as file:
+            tasks = json.load(file)
+    except FileNotFoundError:
+        tasks = []
+
+    tasks.pop(task_id)
+
+    # Save updated tasks
+    with open(TASKS_FILE, 'w') as file:
+        json.dump(tasks, file, indent=4)
+
+    flash("Task deleted successfully!", "success")
+    return redirect(url_for('home'))
+
+@app.route('/export_tasks', methods=['GET'])
+def export_tasks():
+    try:
+        # Load tasks from the JSON file
+        with open(TASKS_FILE, "r") as file:
+            tasks = json.load(file)
+        
+        # Check if there are tasks to export
+        if not tasks:
+            flash("No tasks found to export.", "error")
+            return redirect(url_for('home'))
+        
+        # Export tasks to CSV
+        export_tasks_to_csv(tasks)
+        flash(f"Tasks exported to {CSV_FILE} successfully!", "success")
+    except FileNotFoundError:
+        flash("No tasks found to export.", "error")
+    return redirect(url_for('home'))
+
+@app.route('/dashboard', methods=['GET'])
+def dashboard():
+    try:
+        # Load tasks from the JSON file
+        with open(TASKS_FILE, "r") as file:
+            tasks = json.load(file)
+    except FileNotFoundError:
+        tasks = []
+
+    # Initialize counters
+    total_tasks = len(tasks)
+    completed_tasks = 0
+    pending_tasks = 0
+    overdue_tasks = 0
+
+    today = date.today()
+
+    for task in tasks:
+        task_date = datetime.strptime(task["date"], "%d-%m-%Y").date()
+        if task["status"] == "completed":
+            completed_tasks += 1
+        elif task_date < today and task["status"] == "pending":
+            overdue_tasks += 1
+        elif task["status"] == "pending":
+            pending_tasks += 1
+
+    # Calculate completion percentage
+    if total_tasks > 0:
+        completion_percentage = (completed_tasks / total_tasks) * 100
+    else:
+        completion_percentage = 0
+
+    # Render dashboard.html with all metrics
+    return render_template(
+        "dashboard.html",
+        total_tasks=total_tasks,
+        completed_tasks=completed_tasks,
+        pending_tasks=pending_tasks,
+        overdue_tasks=overdue_tasks,
+        completion_percentage=round(completion_percentage, 2)
+    )
+
+if __name__ == '__main__':
+    app.run(debug=True)

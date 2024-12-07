@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css">
+</head>
+<body>
+    <!-- 🔥 Navbar Section (Start) -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="{{ url_for('index') }}">PS Scheduler</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('index') }}">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('add_task') }}">Add Task</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" aria-current="page" href="{{ url_for('dashboard') }}">Dashboard</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    <!-- 🔥 Navbar Section (End) -->
+
+    <div class="container mt-4">
+        <h1 class="text-center">Task Dashboard</h1>
+
+        <!-- 🔥 Task Completion Progress (Progress Bar) -->
+        <div class="container mt-4">
+            <h3>Task Completion Progress</h3>
+            <div class="progress">
+                <div class="progress-bar bg-success" role="progressbar" 
+                     style="width: {{ completion_percentage }}%;" 
+                     aria-valuenow="{{ completion_percentage }}" 
+                     aria-valuemin="0" 
+                     aria-valuemax="100">
+                    {{ completion_percentage }}%
+                </div>
+            </div>
+        </div>
+
+        <!-- 🔥 Navigation Buttons -->
+        <div class="text-center mb-4 mt-4">
+            <a href="{{ url_for('index') }}" class="btn btn-secondary">Back to Home</a>
+        </div>
+
+        <!-- 🔥 Task Metrics Table -->
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>Metric</th>
+                    <th>Value</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Total Tasks</td>
+                    <td>{{ total_tasks }}</td>
+                </tr>
+                <tr>
+                    <td>Completed Tasks</td>
+                    <td>{{ completed_tasks }}</td>
+                </tr>
+                <tr>
+                    <td>Overdue Tasks</td>
+                    <td>{{ overdue_tasks }}</td>
+                </tr>
+                <tr>
+                    <td>Completion Percentage</td>
+                    <td>{{ completion_percentage }}%</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- 🔥 Bootstrap JS (Optional for dynamic components) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
